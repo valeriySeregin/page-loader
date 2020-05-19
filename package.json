@@ -1,0 +1,51 @@
+{
+  "name": "page-loader-valser",
+  "version": "0.0.0",
+  "description": "backend-project-lvl3",
+  "main": "dist/index.js",
+  "bin": {
+    "pageload": "dist/bin/pageload.js"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "NODE_ENV=production babel src --out-dir dist --source-maps inline",
+    "prepublishOnly": "npm run build",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/valeriySeregin/backend-project-lvl3.git"
+  },
+  "author": "Valeriy Seregin",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/valeriySeregin/backend-project-lvl3/issues"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  },
+  "homepage": "https://github.com/valeriySeregin/backend-project-lvl3#readme",
+  "dependencies": {
+    "commander": "^5.1.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.9.6",
+    "@babel/node": "^7.8.7",
+    "@babel/preset-env": "^7.9.6",
+    "babel-eslint": "^10.1.0",
+    "babel-jest": "^26.0.1",
+    "eslint": "^7.0.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-plugin-babel": "^5.3.0",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-jest": "^23.13.1",
+    "jest": "^26.0.1",
+    "jest-cli": "^26.0.1"
+  }
+}
