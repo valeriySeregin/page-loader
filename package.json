@@ -31,6 +31,7 @@
   },
   "homepage": "https://github.com/valeriySeregin/backend-project-lvl3#readme",
   "dependencies": {
+    "axios": "^0.19.2",
     "commander": "^5.1.0"
   },
   "devDependencies": {
@@ -46,6 +47,7 @@
     "eslint-plugin-import": "^2.20.2",
     "eslint-plugin-jest": "^23.13.1",
     "jest": "^26.0.1",
-    "jest-cli": "^26.0.1"
+    "jest-cli": "^26.0.1",
+    "nock": "^12.0.3"
   }
 }
