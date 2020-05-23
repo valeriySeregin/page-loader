@@ -1,6 +1,6 @@
 {
   "name": "page-loader-valser",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "backend-project-lvl3",
   "main": "dist/index.js",
   "bin": {
