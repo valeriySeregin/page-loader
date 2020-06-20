@@ -71,7 +71,7 @@ test('download local resource 2', async () => {
   }
 });
 
-test('git links of local resources', async () => {
+test('get links of local resources', async () => {
   try {
     const expected = ['style.css', 'image.png'];
     const resourcesLinks = await getLinksOfLocalResources(tmpdirPath, 'http://localhost');
