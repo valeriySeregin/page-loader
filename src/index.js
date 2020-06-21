@@ -143,7 +143,7 @@ export default (dirpath, url) => {
   ]);
 
   return tasks.run().catch((err) => {
-    console.error(err);
+    console.error(err.message);
     throw err;
   });
 };
