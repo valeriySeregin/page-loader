@@ -9,7 +9,11 @@ program
   .option('-o, --output [type]', 'destination directory', process.cwd())
   .arguments('<URL>')
   .action((url, options) => {
-    getHTMLPage(options.output, url);
+    getHTMLPage(options.output, url)
+      .catch((err) => {
+        console.error(` process.exit([code]) initialized. Next error has been caugth: ${err}.`);
+        process.exit(1);
+      });
   });
 
 program.parse(process.argv);
