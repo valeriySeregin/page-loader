@@ -35,34 +35,19 @@ test('download page', async () => {
   }
 });
 
-test('download local resource 1', async () => {
+test.each([
+  ['style.css'],
+  ['image.png'],
+])('downloadLocalResource(%s, %s, %s)', async (link) => {
   try {
-    const response = await fs.readFile(getFixturePath('image.png'), { encoding: 'utf8' });
+    const response = await fs.readFile(getFixturePath(link), { encoding: 'utf8' });
 
     nock('http://localhost')
-      .get('/image.png')
+      .get(`/${link}`)
       .reply(200, response);
 
-    await downloadResource(tmpdirPath, 'http://localhost', 'image.png');
-    const resource = await fs.readFile(path.join(tmpdirPath, 'localhost_files/image.png'), 'utf-8');
-
-    expect(resource).toEqual(response);
-  } catch (e) {
-    console.error(e);
-    throw e;
-  }
-});
-
-test('download local resource 2', async () => {
-  try {
-    const response = await fs.readFile(getFixturePath('style.css'), { encoding: 'utf8' });
-
-    nock('http://localhost')
-      .get('/style.css')
-      .reply(200, response);
-
-    await downloadResource(tmpdirPath, 'http://localhost', 'style.css');
-    const resource = await fs.readFile(path.join(tmpdirPath, 'localhost_files/style.css'), 'utf-8');
+    await downloadResource(tmpdirPath, 'http://localhost', link);
+    const resource = await fs.readFile(path.join(tmpdirPath, `localhost_files/${link}`), 'utf-8');
 
     expect(resource).toEqual(response);
   } catch (e) {
