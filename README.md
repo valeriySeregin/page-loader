@@ -6,3 +6,12 @@
 
 # asciinema after step 1
 [![asciicast](https://asciinema.org/a/renB2CCFJLD8bhyvPfyuWXDXF.svg)](https://asciinema.org/a/renB2CCFJLD8bhyvPfyuWXDXF)
+
+# installing util and example of its work
+[![asciicast](https://asciinema.org/a/VKwpgIMeSXh9lxjiQPhU4Koa3.svg)](https://asciinema.org/a/VKwpgIMeSXh9lxjiQPhU4Koa3)
+
+# downloading to specified directory
+[![asciicast](https://asciinema.org/a/NMJ3UsJ3aQaVO0zp8G14najX8.svg)](https://asciinema.org/a/NMJ3UsJ3aQaVO0zp8G14najX8)
+
+# how debug works
+[![asciicast](https://asciinema.org/a/EhVCvnx0Wqb5a3hLkBdTrBmdr.svg)](https://asciinema.org/a/EhVCvnx0Wqb5a3hLkBdTrBmdr)
