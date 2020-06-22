@@ -1,13 +1,10 @@
 import downloadPageWithResources from '../src';
 
-test('downloading fails on incorrect URL', async () => {
-  await expect(downloadPageWithResources('mySuperDirectory', 'https://somename.smt')).rejects.toThrow(
-    expect.objectContaining({ message: 'getaddrinfo ENOTFOUND somename.smt' }),
-  );
-});
-
-test('downloading fails on incorrect directory path', async () => {
-  await expect(downloadPageWithResources('mySuperDirectory', 'https://ru.hexlet.io')).rejects.toThrow(
-    expect.objectContaining({ message: 'ENOENT: no such file or directory, mkdir \'mySuperDirectory/ru-hexlet-io_files\'' }),
+test.each([
+  ['mySuperDirectory', 'https://somename.smt', { message: 'getaddrinfo ENOTFOUND somename.smt' }],
+  ['mySuperDirectory', 'https://ru.hexlet.io', { message: 'ENOENT: no such file or directory, mkdir \'mySuperDirectory/ru-hexlet-io_files\'' }],
+])('downloadLocalResource(%s, %s, %o)', async (dirname, URL, expected) => {
+  await expect(downloadPageWithResources(dirname, URL)).rejects.toThrow(
+    expect.objectContaining(expected),
   );
 });
