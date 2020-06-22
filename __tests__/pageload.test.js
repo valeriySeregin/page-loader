@@ -38,7 +38,7 @@ test('download page', async () => {
 test.each([
   ['style.css'],
   ['image.png'],
-])('downloadLocalResource(%s, %s, %s)', async (link) => {
+])('downloadLocalResource(%s)', async (link) => {
   try {
     const response = await fs.readFile(getFixturePath(link), { encoding: 'utf8' });
 
