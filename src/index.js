@@ -39,9 +39,8 @@ export const getName = (url, type = 'file') => {
   return names[type];
 };
 
-export const getLinksOfLocalResources = (dirpath, url) => {
-  const filename = getName(url, 'page');
-  const filepath = `${dirpath}/${filename}`;
+export const getLinksOfLocalResources = (dirpath, pagename) => {
+  const filepath = `${dirpath}/${pagename}`;
 
   return fs.readFile(filepath, 'utf-8')
     .then((html) => {
@@ -61,9 +60,7 @@ export const getLinksOfLocalResources = (dirpath, url) => {
     });
 };
 
-export const downloadPage = (dirpath, url) => {
-  const filename = getName(url, 'page');
-  const dirname = getName(url, 'directory');
+export const downloadPage = (dirpath, url, pagename, dirname) => {
   let html;
 
   return axios(url)
@@ -71,16 +68,15 @@ export const downloadPage = (dirpath, url) => {
       html = data;
     })
     .then(() => fs.mkdir(path.join(dirpath, dirname)))
-    .then(() => fs.writeFile(path.join(dirpath, filename), html))
+    .then(() => fs.writeFile(path.join(dirpath, pagename), html))
     .catch((error) => {
       console.error(`Page downloading error: ${error.message}`);
       throw error;
     });
 };
 
-export const downloadResource = (dirpath, url, link) => {
+export const downloadResource = (dirpath, url, link, dirname) => {
   const filename = getName(link);
-  const dirname = getName(url, 'directory');
   const downloadingLink = new URL(link, url);
   let resource;
 
@@ -95,50 +91,48 @@ export const downloadResource = (dirpath, url, link) => {
     });
 };
 
-export const changeResourcesLinks = (dirpath, url) => {
-  const dirname = getName(url, 'directory');
-  const filename = getName(url, 'page');
-
-  return fs.readFile(`${dirpath}/${filename}`, 'utf-8')
-    .then((html) => {
-      debug(`File from ${dirpath} was read`);
-      const $ = cheerio.load(html, { xmlMode: true, decodeEntities: false });
-      $('link, script, img')
-        .each((i, tag) => {
-          const mapping = {
-            img: 'src',
-            link: 'href',
-            script: 'href',
-          };
-          const oldAttr = $(tag).attr('href') || $(tag).attr('src');
-          const attrToChange = mapping[tag.name];
-          $(tag).attr(attrToChange, `${dirname}/${oldAttr}`);
-        });
-      fs.writeFile(`${dirpath}/${filename}`, $.html());
-    })
-    .catch((error) => {
-      console.error(`Error during changing resources links: ${error.message}`);
-      throw error;
-    });
-};
+export const changeResourcesLinks = (dirpath, pagename, dirname) => fs.readFile(`${dirpath}/${pagename}`, 'utf-8')
+  .then((html) => {
+    debug(`File from ${dirpath} was read`);
+    const $ = cheerio.load(html, { xmlMode: true, decodeEntities: false });
+    $('link, script, img')
+      .each((i, tag) => {
+        const mapping = {
+          img: 'src',
+          link: 'href',
+          script: 'href',
+        };
+        const oldAttr = $(tag).attr('href') || $(tag).attr('src');
+        const attrToChange = mapping[tag.name];
+        $(tag).attr(attrToChange, `${dirname}/${oldAttr}`);
+      });
+    fs.writeFile(`${dirpath}/${pagename}`, $.html());
+  })
+  .catch((error) => {
+    console.error(`Error during changing resources links: ${error.message}`);
+    throw error;
+  });
 
 export default (dirpath, url) => {
+  const pagename = getName(url, 'page');
+  const dirname = getName(url, 'directory');
+
   const tasks = new Listr([
     {
       title: 'Download HTML page',
-      task: () => downloadPage(dirpath, url),
+      task: () => downloadPage(dirpath, url, pagename, dirname),
     },
     {
       title: 'Get local resources links and download resources',
-      task: () => getLinksOfLocalResources(dirpath, url)
-        .then((links) => links.map((link) => downloadResource(dirpath, url, link)
+      task: () => getLinksOfLocalResources(dirpath, pagename)
+        .then((links) => links.map((link) => downloadResource(dirpath, url, link, dirname)
           .then((v) => ({ result: 'success', value: v }))
           .catch((e) => ({ result: 'error', error: e }))))
         .then((promises) => Promise.all(promises)),
     },
     {
       title: 'Change resources links',
-      task: () => changeResourcesLinks(dirpath, url),
+      task: () => changeResourcesLinks(dirpath, pagename, dirname),
     },
   ]);
 
