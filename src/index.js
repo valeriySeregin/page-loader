@@ -9,6 +9,7 @@ import { URL } from 'url';
 import _ from 'lodash';
 
 const debug = buildDebug('page-loader');
+debug.enabled = true;
 
 axiosDebug({
   request: (getDebugged, config) => {
