@@ -13,5 +13,5 @@
 # downloading to specified directory
 [![asciicast](https://asciinema.org/a/NMJ3UsJ3aQaVO0zp8G14najX8.svg)](https://asciinema.org/a/NMJ3UsJ3aQaVO0zp8G14najX8)
 
-# how debug works
-[![asciicast](https://asciinema.org/a/EhVCvnx0Wqb5a3hLkBdTrBmdr.svg)](https://asciinema.org/a/EhVCvnx0Wqb5a3hLkBdTrBmdr)
+# util working with enabled debug
+[![asciicast](https://asciinema.org/a/NNPpNPnOjLubUlGQmj4Yl6WMb.svg)](https://asciinema.org/a/NNPpNPnOjLubUlGQmj4Yl6WMb)
