@@ -12,7 +12,7 @@ program
   .action((url, options) => {
     getHTMLPage(options.output, url)
       .catch((err) => {
-        console.error(`process.exit([code]) initialized. Next error has been caugth: ${err}.`);
+        console.error(err.message);
         process.exit(1);
       });
   });
