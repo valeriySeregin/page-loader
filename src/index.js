@@ -2,28 +2,12 @@ import { promises as fs } from 'fs';
 import axios from 'axios';
 import path from 'path';
 import cheerio from 'cheerio';
-import axiosDebug from 'axios-debug-log';
 import buildDebug from 'debug';
 import Listr from 'listr';
 import { URL } from 'url';
 import _ from 'lodash';
 
 const debug = buildDebug('page-loader');
-
-axiosDebug({
-  request: (getDebugged, config) => {
-    getDebugged(`Request with ${config.headers['content-type']}`);
-  },
-  response: (getDebugged, response) => {
-    getDebugged(
-      `Response with ${response.headers['content-type']}`,
-      `from ${response.config.url}`,
-    );
-  },
-  error: (getDebugged, error) => {
-    getDebugged('Boom', error);
-  },
-});
 
 export const getName = (url, type = 'file') => {
   const urlComponents = url.split(/\/\/|\.|\//);
