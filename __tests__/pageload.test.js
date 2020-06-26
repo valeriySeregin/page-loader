@@ -3,7 +3,20 @@ import os from 'os';
 import path from 'path';
 import nock from 'nock';
 import { URL } from 'url';
+import axiosDebug from 'axios-debug-log';
 import getHTMLPage from '../src';
+
+axiosDebug({
+  request: (debug, config) => {
+    debug(`Request with '${config.method}' to ${config.url}`);
+  },
+  response: (debug, response) => {
+    debug(`Response with ${response.status} from ${response.config.url}`);
+  },
+  error: (debug, error) => {
+    debug(`There is problem here: ${error.message}`);
+  },
+});
 
 const getFixturePath = (filename) => path.join(__dirname, '..', '__fixtures__', filename);
 
