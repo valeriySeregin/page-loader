@@ -9,7 +9,6 @@ import { URL } from 'url';
 import _ from 'lodash';
 
 const debug = buildDebug('page-loader');
-debug.enabled = true;
 
 axiosDebug({
   request: (getDebugged, config) => {
@@ -54,42 +53,35 @@ export const getLinksOfLocalResources = (dirpath, pagename) => {
 
       debug('Extracted local links:', links);
       return links;
-    })
-    .catch((error) => {
-      console.error(`Getting local resources links error: ${error.message}`);
-      throw error;
     });
 };
 
 export const downloadPage = (dirpath, url, pagename, dirname) => {
   let html;
 
+  debug(`Download page from ${url}`);
+
   return axios(url)
     .then(({ data }) => {
       html = data;
     })
     .then(() => fs.mkdir(path.join(dirpath, dirname)))
-    .then(() => fs.writeFile(path.join(dirpath, pagename), html))
-    .catch((error) => {
-      console.error(`Page downloading error: ${error.message}`);
-      throw error;
-    });
+    .then(() => fs.writeFile(path.join(dirpath, pagename), html));
 };
 
 export const downloadResource = (dirpath, url, link, dirname) => {
   const filename = getName(link);
-  const downloadingLink = new URL(link, url);
+  const downloadingLink = new URL(url);
+  downloadingLink.pathname = `${downloadingLink.pathname}/${link}`;
   let resource;
+
+  debug(`Download resource from ${downloadingLink.href}`);
 
   return axios(downloadingLink.href)
     .then(({ data }) => {
       resource = data;
     })
-    .then(() => fs.writeFile(path.join(dirpath, dirname, filename), resource))
-    .catch((error) => {
-      console.error(`Resource downloading error: ${error.message}`);
-      throw error;
-    });
+    .then(() => fs.writeFile(path.join(dirpath, dirname, filename), resource));
 };
 
 export const changeResourcesLinks = (dirpath, pagename, dirname) => fs.readFile(`${dirpath}/${pagename}`, 'utf-8')
@@ -108,10 +100,6 @@ export const changeResourcesLinks = (dirpath, pagename, dirname) => fs.readFile(
         $(tag).attr(attrToChange, `${dirname}/${oldAttr}`);
       });
     fs.writeFile(`${dirpath}/${pagename}`, $.html());
-  })
-  .catch((error) => {
-    console.error(`Error during changing resources links: ${error.message}`);
-    throw error;
   });
 
 export default (dirpath, url) => {
@@ -137,8 +125,5 @@ export default (dirpath, url) => {
     },
   ]);
 
-  return tasks.run().catch((err) => {
-    console.error(err.message);
-    throw err;
-  });
+  return tasks.run();
 };
