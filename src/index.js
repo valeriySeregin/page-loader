@@ -8,7 +8,7 @@ import { URL } from 'url';
 
 const debug = buildDebug('page-loader');
 
-export const getName = (link, type = 'file') => {
+const getName = (link, type = 'file') => {
   const linkWithoutProtocol = link.replace(/http:\/\/|https:\/\//, '');
 
   const name = {
@@ -22,7 +22,20 @@ export const getName = (link, type = 'file') => {
   return name[type];
 };
 
-export const getLinksOfLocalResources = (dirpath, pagename) => {
+const downloadPage = (dirpath, url, pagename, dirname) => {
+  let html;
+
+  debug(`Download page from ${url}`);
+
+  return axios(url)
+    .then(({ data }) => {
+      html = data;
+    })
+    .then(() => fs.mkdir(path.join(dirpath, dirname)))
+    .then(() => fs.writeFile(path.join(dirpath, pagename), html));
+};
+
+const getLinksOfLocalResources = (dirpath, pagename) => {
   const filepath = `${path.join(dirpath, pagename)}`;
 
   return fs.readFile(filepath, 'utf-8')
@@ -40,20 +53,7 @@ export const getLinksOfLocalResources = (dirpath, pagename) => {
     });
 };
 
-export const downloadPage = (dirpath, url, pagename, dirname) => {
-  let html;
-
-  debug(`Download page from ${url}`);
-
-  return axios(url)
-    .then(({ data }) => {
-      html = data;
-    })
-    .then(() => fs.mkdir(path.join(dirpath, dirname)))
-    .then(() => fs.writeFile(path.join(dirpath, pagename), html));
-};
-
-export const downloadResource = (dirpath, url, link, dirname) => {
+const downloadResource = (dirpath, url, link, dirname) => {
   const filename = getName(link);
   const downloadingLink = new URL(url);
   downloadingLink.pathname = `${downloadingLink.pathname}/${link}`;
@@ -68,7 +68,7 @@ export const downloadResource = (dirpath, url, link, dirname) => {
     .then(() => fs.writeFile(path.join(dirpath, dirname, filename), resource));
 };
 
-export const changeResourcesLinks = (dirpath, pagename, dirname) => fs.readFile(`${path.join(dirpath, pagename)}`, 'utf-8')
+const changeResourcesLinks = (dirpath, pagename, dirname) => fs.readFile(`${path.join(dirpath, pagename)}`, 'utf-8')
   .then((html) => {
     debug(`File from ${dirpath} has been read`);
     const $ = cheerio.load(html, { xmlMode: true, decodeEntities: false });
