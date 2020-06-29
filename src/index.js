@@ -5,26 +5,25 @@ import cheerio from 'cheerio';
 import buildDebug from 'debug';
 import Listr from 'listr';
 import { URL } from 'url';
-import _ from 'lodash';
 
 const debug = buildDebug('page-loader');
 
-export const getName = (url, type = 'file') => {
-  const urlComponents = url.split(/\/\/|\.|\//);
+export const getName = (link, type = 'file') => {
+  const linkWithoutProtocol = link.replace(/http:\/\/|https:\/\//, '');
 
-  const names = {
-    file: `${_.initial(urlComponents).join('-')}.${_.last(urlComponents)}`,
-    page: `${_.tail(urlComponents).join('-')}.html`,
-    directory: `${_.tail(urlComponents).join('-')}_files`,
+  const name = {
+    file: `${linkWithoutProtocol.replace(/\//, '-')}`,
+    page: `${linkWithoutProtocol.replace(/\.|\//g, '-')}.html`,
+    directory: `${linkWithoutProtocol.replace(/\.|\//g, '-')}_files`,
   };
 
-  debug(`Get name for ${type} of ${url}`);
+  debug(`${name[type]} name has been created for ${type} of ${link}`);
 
-  return names[type];
+  return name[type];
 };
 
 export const getLinksOfLocalResources = (dirpath, pagename) => {
-  const filepath = `${dirpath}/${pagename}`;
+  const filepath = `${path.join(dirpath, pagename)}`;
 
   return fs.readFile(filepath, 'utf-8')
     .then((html) => {
@@ -36,6 +35,7 @@ export const getLinksOfLocalResources = (dirpath, pagename) => {
         .filter((link) => link.split('//').length === 1);
 
       debug('Extracted local links:', links);
+
       return links;
     });
 };
@@ -68,22 +68,23 @@ export const downloadResource = (dirpath, url, link, dirname) => {
     .then(() => fs.writeFile(path.join(dirpath, dirname, filename), resource));
 };
 
-export const changeResourcesLinks = (dirpath, pagename, dirname) => fs.readFile(`${dirpath}/${pagename}`, 'utf-8')
+export const changeResourcesLinks = (dirpath, pagename, dirname) => fs.readFile(`${path.join(dirpath, pagename)}`, 'utf-8')
   .then((html) => {
-    debug(`File from ${dirpath} was read`);
+    debug(`File from ${dirpath} has been read`);
     const $ = cheerio.load(html, { xmlMode: true, decodeEntities: false });
     $('link, script, img')
       .each((i, tag) => {
         const mapping = {
           img: 'src',
           link: 'href',
-          script: 'href',
+          script: 'src',
         };
         const oldAttr = $(tag).attr('href') || $(tag).attr('src');
         const attrToChange = mapping[tag.name];
-        $(tag).attr(attrToChange, `${dirname}/${oldAttr}`);
+        const value = oldAttr.split('//').length === 1 ? `${path.join(dirname, getName(oldAttr))}` : oldAttr;
+        $(tag).attr(attrToChange, value);
       });
-    fs.writeFile(`${dirpath}/${pagename}`, $.html());
+    fs.writeFile(`${path.join(dirpath, pagename)}`, $.html());
   });
 
 export default (dirpath, url) => {
