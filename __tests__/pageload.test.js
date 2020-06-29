@@ -20,11 +20,12 @@ axiosDebug({
 
 const getFixturePath = (filename) => path.join(__dirname, '..', '__fixtures__', filename);
 
+nock.disableNetConnect();
+
 let tmpdirPath;
 
 beforeEach(async () => {
   tmpdirPath = await fs.mkdtemp(path.join(os.tmpdir(), 'page-loader-'));
-  nock.disableNetConnect();
 });
 
 test('download HTML page with local resources', async () => {
@@ -39,26 +40,28 @@ test('download HTML page with local resources', async () => {
   const firstResourceResponse = await fs.readFile(getFixturePath('style.css'), 'utf-8');
 
   nock(testURL.origin)
-    .get(`${testURL.pathname}/style.css`)
+    .get(`${path.join(testURL.pathname, 'style.css')}`)
     .reply(200, firstResourceResponse)
     .log(console.log);
 
   const secondResourceResponse = await fs.readFile(getFixturePath('image.png'), 'utf-8');
 
   nock(testURL.origin)
-    .get(`${testURL.pathname}/image.png`)
+    .get(`${path.join(testURL.pathname, 'assets/image.png')}`)
     .reply(200, secondResourceResponse)
     .log(console.log);
 
-  await getHTMLPage(tmpdirPath, testURL.href);
+  await getHTMLPage(tmpdirPath, testURL.toString());
 
   const actual1 = await fs.readFile(path.join(tmpdirPath, 'localhost-loc-resources.html'), 'utf-8');
   const expected1 = await fs.readFile(getFixturePath('localhost-test-changed.html'), 'utf-8');
 
-  const actual2 = await fs.readFile(path.join(tmpdirPath, 'localhost-loc-resources_files', 'style.css'), 'utf-8');
+  const assetsDirectory = 'localhost-loc-resources_files';
+
+  const actual2 = await fs.readFile(path.join(tmpdirPath, assetsDirectory, 'style.css'), 'utf-8');
   const expected2 = firstResourceResponse;
 
-  const actual3 = await fs.readFile(path.join(tmpdirPath, 'localhost-loc-resources_files', 'image.png'), 'utf-8');
+  const actual3 = await fs.readFile(path.join(tmpdirPath, assetsDirectory, 'assets-image.png'), 'utf-8');
   const expected3 = secondResourceResponse;
 
   expect(actual1).toEqual(expected1);
@@ -90,5 +93,4 @@ test('downloading fails on incorrect directory', async () => {
 
 afterEach(async () => {
   await fs.rmdir(tmpdirPath, { recursive: true });
-  nock.enableNetConnect();
 });
