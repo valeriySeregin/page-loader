@@ -12,7 +12,7 @@ const getName = (link, type = 'file') => {
   const linkWithoutProtocol = link.replace(/http:\/\/|https:\/\//, '');
 
   const name = {
-    file: `${linkWithoutProtocol.replace(/\//, '-')}`,
+    file: `${linkWithoutProtocol.replace(/\//g, '-')}`,
     page: `${linkWithoutProtocol.replace(/\.|\//g, '-')}.html`,
     directory: `${linkWithoutProtocol.replace(/\.|\//g, '-')}_files`,
   };
@@ -66,24 +66,22 @@ export default (dirpath, url) => {
   const pagename = getName(url, 'page');
   const dirname = getName(url, 'directory');
 
-  let linksOnLocalResources;
-
   debug(`Request to ${url}`);
-
   return axios(url)
     .then((response) => fs.writeFile(path.join(dirpath, pagename), response.data))
     .then(() => fs.mkdir(path.join(dirpath, dirname)))
     .then(() => fs.readFile(path.join(dirpath, pagename), 'utf-8'))
     .then((html) => getLinksOfLocalResources(html))
     .then((links) => {
-      linksOnLocalResources = links;
-      const promises = links.map((link) => downloadResource(url, link));
-      return Promise.all(promises);
-    })
-    .then((resources) => {
-      const promises = resources.map(({ data }, i) => fs
-        .writeFile(path.join(dirpath, dirname, getName(linksOnLocalResources[i])), data));
-      return Promise.all(promises);
+      const tasksForListr = links.map((link) => ({
+        title: link,
+        task: () => downloadResource(url, link)
+          .then((resource) => (
+            fs.writeFile(path.join(dirpath, dirname, getName(link)), resource.data)
+          )),
+      }));
+
+      return new Listr(tasksForListr, { concurrent: true }).run();
     })
     .then(() => fs.readFile(`${path.join(dirpath, pagename)}`, 'utf-8'))
     .then((html) => changeResourcesLinks(html, dirname))
