@@ -77,7 +77,7 @@ test('downloading fails on HTTP error 404', async () => {
     .reply(404)
     .log(console.log);
 
-  await expect(getHTMLPage('/tmp', testURL.href)).rejects.toThrow();
+  await expect(getHTMLPage('/tmp', testURL.toString())).rejects.toThrow();
 });
 
 test('downloading fails on incorrect directory', async () => {
@@ -88,7 +88,7 @@ test('downloading fails on incorrect directory', async () => {
     .reply(200)
     .log(console.log);
 
-  await expect(getHTMLPage('/mySuperDirectory', testURL.href)).rejects.toThrow();
+  await expect(getHTMLPage('/mySuperDirectory', testURL.toString())).rejects.toThrow();
 });
 
 afterEach(async () => {
