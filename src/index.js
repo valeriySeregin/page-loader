@@ -55,7 +55,7 @@ const changeResourcesLinks = (html, dirname) => {
       };
       const oldAttr = $(tag).attr('href') || $(tag).attr('src');
       const attrToChange = mapping[tag.name];
-      const value = oldAttr.split('//').length === 1 ? `${path.join(dirname, getName(oldAttr))}` : oldAttr;
+      const value = oldAttr.split('//').length === 1 ? path.join(dirname, getName(oldAttr)) : oldAttr;
       $(tag).attr(attrToChange, value);
     });
 
