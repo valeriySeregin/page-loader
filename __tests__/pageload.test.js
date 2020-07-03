@@ -40,14 +40,14 @@ test('download HTML page with local resources', async () => {
   const firstResourceResponse = await fs.readFile(getFixturePath('style.css'), 'utf-8');
 
   nock(testURL.origin)
-    .get(`${path.join(testURL.pathname, 'style.css')}`)
+    .get(`${testURL.pathname}/style.css`)
     .reply(200, firstResourceResponse)
     .log(console.log);
 
   const secondResourceResponse = await fs.readFile(getFixturePath('image.png'), 'utf-8');
 
   nock(testURL.origin)
-    .get(`${path.join(testURL.pathname, 'assets/image.png')}`)
+    .get(`${testURL.pathname}/assets/image.png`)
     .reply(200, secondResourceResponse)
     .log(console.log);
 
