@@ -66,13 +66,18 @@ export default (dirpath, url) => {
   const pagename = getName(url, 'page');
   const dirname = getName(url, 'directory');
 
+  let html;
+  let links;
+
   debug(`Request to ${url}`);
+
   return axios(url)
-    .then((response) => fs.writeFile(path.join(dirpath, pagename), response.data))
+    .then((response) => {
+      html = response.data;
+      links = getLinksOfLocalResources(html);
+    })
     .then(() => fs.mkdir(path.join(dirpath, dirname)))
-    .then(() => fs.readFile(path.join(dirpath, pagename), 'utf-8'))
-    .then((html) => getLinksOfLocalResources(html))
-    .then((links) => {
+    .then(() => {
       const tasksForListr = links.map((link) => ({
         title: link,
         task: () => downloadResource(url, link)
@@ -83,7 +88,6 @@ export default (dirpath, url) => {
 
       return new Listr(tasksForListr, { concurrent: true }).run();
     })
-    .then(() => fs.readFile(`${path.join(dirpath, pagename)}`, 'utf-8'))
-    .then((html) => changeResourcesLinks(html, dirname))
-    .then(($) => fs.writeFile(`${path.join(dirpath, pagename)}`, $.html()));
+    .then(() => changeResourcesLinks(html, dirname))
+    .then(($) => fs.writeFile(path.join(dirpath, pagename), $.html()));
 };
