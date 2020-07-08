@@ -5,89 +5,111 @@ import cheerio from 'cheerio';
 import buildDebug from 'debug';
 import Listr from 'listr';
 import { URL } from 'url';
+import _ from 'lodash';
 
 const debug = buildDebug('page-loader');
 
-const getName = (link, type = 'file') => {
-  const linkWithoutProtocol = link.replace(/http:\/\/|https:\/\//, '');
+const getName = (url, type = 'file') => {
+  const linkWithoutProtocol = `${url.hostname}${url.pathname}`
+    .replace(/\//g, '-')
+    .replace(/\./, '-');
 
-  const name = {
-    file: `${linkWithoutProtocol.replace(/\//g, '-')}`,
-    page: `${linkWithoutProtocol.replace(/\.|\//g, '-')}.html`,
-    directory: `${linkWithoutProtocol.replace(/\.|\//g, '-')}_files`,
+  const nameMapping = {
+    file: `${_.trimStart(url.pathname, '/').replace(/\//g, '-')}`,
+    page: `${linkWithoutProtocol}.html`,
+    directory: `${linkWithoutProtocol}_files`,
   };
 
-  debug(`${name[type]} name has been created for ${type} of ${link}`);
+  debug(`${nameMapping[type]} name has been created for ${type} of ${url.href}`);
 
-  return name[type];
+  return nameMapping[type];
 };
 
-const getLinksOfLocalResources = (html) => {
-  const $ = cheerio.load(html, { decodeEntities: false });
+const downloadResource = (url, link, dirpath, dirname) => {
+  const downloadingLink = new URL(link, url);
+  const writingPath = path.join(dirpath, dirname, getName(downloadingLink));
+
+  debug(`Download resource from ${downloadingLink.href}`);
+
+  return axios({
+    method: 'get',
+    url: downloadingLink.href,
+    responseType: 'arraybuffer',
+  })
+    .then((resource) => fs.writeFile(writingPath, resource.data));
+};
+
+const changeLinksOnPage = (html, dirname, locator) => {
+  const url = new URL(locator);
+  const $ = cheerio.load(html, { xmlMode: true, decodeEntities: false });
+
+  const mapping = {
+    img: 'src',
+    link: 'href',
+    script: 'src',
+  };
+
   const links = $('link, script, img')
     .toArray()
     .map((element) => $(element).attr('href') || $(element).attr('src'))
     .filter((element) => element)
-    .filter((link) => link.split('//').length === 1);
+    .filter((link) => {
+      const URLToCheckOrigin = new URL(link, locator);
+
+      return URLToCheckOrigin.origin === url.origin;
+    });
 
   debug('Extracted local links:', links);
 
-  return links;
-};
-
-const downloadResource = (url, link) => {
-  const downloadingLink = new URL(url);
-  downloadingLink.pathname = path.join(downloadingLink.pathname, link);
-
-  debug(`Download resource from ${downloadingLink.href}`);
-
-  return axios(downloadingLink.href);
-};
-
-const changeResourcesLinks = (html, dirname) => {
-  const $ = cheerio.load(html, { xmlMode: true, decodeEntities: false });
   $('link, script, img')
     .each((i, tag) => {
-      const mapping = {
-        img: 'src',
-        link: 'href',
-        script: 'src',
-      };
       const oldAttr = $(tag).attr('href') || $(tag).attr('src');
+      const newAttr = new URL(oldAttr, locator);
       const attrToChange = mapping[tag.name];
-      const value = oldAttr.split('//').length === 1 ? path.join(dirname, getName(oldAttr)) : oldAttr;
+      const value = newAttr.origin === url.origin ? path.join(dirname, getName(newAttr)) : oldAttr;
       $(tag).attr(attrToChange, value);
     });
 
-  return $;
+  return {
+    jQueryMimic: $,
+    links,
+  };
 };
 
-export default (dirpath, url) => {
+export default (pathToDirectoryToWrite, locator) => {
+  const url = new URL(locator);
   const pagename = getName(url, 'page');
-  const dirname = getName(url, 'directory');
+  const filesDirectoryName = getName(url, 'directory');
 
   let html;
-  let links;
+  let changedPageInformation;
 
-  debug(`Request to ${url}`);
+  debug(`Request to ${url.href}`);
 
-  return axios(url)
+  return axios({
+    method: 'get',
+    url: url.href,
+    responseType: 'arraybuffer',
+  })
     .then((response) => {
       html = response.data;
-      links = getLinksOfLocalResources(html);
     })
-    .then(() => fs.mkdir(path.join(dirpath, dirname)))
+    .then(() => fs.mkdir(path.join(pathToDirectoryToWrite, filesDirectoryName)))
     .then(() => {
-      const tasksForListr = links.map((link) => ({
+      changedPageInformation = changeLinksOnPage(html, filesDirectoryName, url.href);
+    })
+    .then(() => {
+      const tasksForListr = changedPageInformation.links.map((link) => ({
         title: link,
-        task: () => downloadResource(url, link)
-          .then((resource) => (
-            fs.writeFile(path.join(dirpath, dirname, getName(link)), resource.data)
-          )),
+        task: () => downloadResource(url.href, link, pathToDirectoryToWrite, filesDirectoryName),
       }));
 
-      return new Listr(tasksForListr, { concurrent: true }).run();
+      const tasks = new Listr(tasksForListr, { concurrent: true });
+
+      return tasks.run();
     })
-    .then(() => changeResourcesLinks(html, dirname))
-    .then(($) => fs.writeFile(path.join(dirpath, pagename), $.html()));
+    .then(() => {
+      const writingPath = path.join(pathToDirectoryToWrite, pagename);
+      return fs.writeFile(writingPath, changedPageInformation.jQueryMimic.html());
+    });
 };
