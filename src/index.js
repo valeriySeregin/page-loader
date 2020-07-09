@@ -39,8 +39,7 @@ const downloadResource = (url, link, dirpath, dirname) => {
     .then((resource) => fs.writeFile(writingPath, resource.data));
 };
 
-const changeLinksOnPage = (html, dirname, locator) => {
-  const url = new URL(locator);
+const changeLinksOnPage = (html, dirname, urlOrigin, locator) => {
   const $ = cheerio.load(html, { xmlMode: true, decodeEntities: false });
 
   const mapping = {
@@ -56,7 +55,7 @@ const changeLinksOnPage = (html, dirname, locator) => {
     .filter((link) => {
       const URLToCheckOrigin = new URL(link, locator);
 
-      return URLToCheckOrigin.origin === url.origin;
+      return URLToCheckOrigin.origin === urlOrigin;
     });
 
   debug('Extracted local links:', links);
@@ -66,7 +65,7 @@ const changeLinksOnPage = (html, dirname, locator) => {
       const oldAttr = $(tag).attr('href') || $(tag).attr('src');
       const newAttr = new URL(oldAttr, locator);
       const attrToChange = mapping[tag.name];
-      const value = newAttr.origin === url.origin ? path.join(dirname, getName(newAttr)) : oldAttr;
+      const value = newAttr.origin === urlOrigin ? path.join(dirname, getName(newAttr)) : oldAttr;
       $(tag).attr(attrToChange, value);
     });
 
@@ -88,7 +87,7 @@ export default (pathToDirectoryToWrite, locator) => {
   return axios(url.href)
     .then((response) => {
       const html = response.data;
-      changedPageInformation = changeLinksOnPage(html, filesDirectoryName, url.href);
+      changedPageInformation = changeLinksOnPage(html, filesDirectoryName, url.origin, url.toString());
     })
     .then(() => fs.mkdir(path.join(pathToDirectoryToWrite, filesDirectoryName)))
     .then(() => {
