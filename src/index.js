@@ -29,17 +29,17 @@ const downloadResource = (url, link, dirpath, dirname) => {
   const downloadingLink = new URL(link, url);
   const writingPath = path.join(dirpath, dirname, getName(downloadingLink));
 
-  debug(`Download resource from ${downloadingLink.href}`);
+  debug(`Download resource from ${downloadingLink.toString()}`);
 
   return axios({
     method: 'get',
-    url: downloadingLink.href,
+    url: downloadingLink.toString(),
     responseType: 'arraybuffer',
   })
     .then((resource) => fs.writeFile(writingPath, resource.data));
 };
 
-const changeLinksOnPage = (html, dirname, urlOrigin, locator) => {
+const changeLinksOnPage = (html, dirname, urlOrigin, pageUrl) => {
   const $ = cheerio.load(html, { xmlMode: true, decodeEntities: false });
 
   const mapping = {
@@ -53,7 +53,7 @@ const changeLinksOnPage = (html, dirname, urlOrigin, locator) => {
     .map((element) => $(element).attr('href') || $(element).attr('src'))
     .filter((element) => element)
     .filter((link) => {
-      const URLToCheckOrigin = new URL(link, locator);
+      const URLToCheckOrigin = new URL(link, pageUrl);
 
       return URLToCheckOrigin.origin === urlOrigin;
     });
@@ -63,7 +63,7 @@ const changeLinksOnPage = (html, dirname, urlOrigin, locator) => {
   $('link, script, img')
     .each((i, tag) => {
       const oldAttr = $(tag).attr('href') || $(tag).attr('src');
-      const newAttr = new URL(oldAttr, locator);
+      const newAttr = new URL(oldAttr, pageUrl);
       const attrToChange = mapping[tag.name];
       const value = newAttr.origin === urlOrigin ? path.join(dirname, getName(newAttr)) : oldAttr;
       $(tag).attr(attrToChange, value);
@@ -75,8 +75,8 @@ const changeLinksOnPage = (html, dirname, urlOrigin, locator) => {
   };
 };
 
-export default (pathToDirectoryToWrite, locator) => {
-  const url = new URL(locator);
+export default (outputDirname, pageUrl) => {
+  const url = new URL(pageUrl);
   const pagename = getName(url, 'page');
   const filesDirectoryName = getName(url, 'directory');
 
@@ -87,13 +87,18 @@ export default (pathToDirectoryToWrite, locator) => {
   return axios(url.href)
     .then((response) => {
       const html = response.data;
-      changedPageInformation = changeLinksOnPage(html, filesDirectoryName, url.origin, url.toString());
+      changedPageInformation = changeLinksOnPage(
+        html,
+        filesDirectoryName,
+        url.origin,
+        url.toString(),
+      );
     })
-    .then(() => fs.mkdir(path.join(pathToDirectoryToWrite, filesDirectoryName)))
+    .then(() => fs.mkdir(path.join(outputDirname, filesDirectoryName)))
     .then(() => {
       const tasksForListr = changedPageInformation.links.map((link) => ({
         title: link,
-        task: () => downloadResource(url.href, link, pathToDirectoryToWrite, filesDirectoryName),
+        task: () => downloadResource(url.href, link, outputDirname, filesDirectoryName),
       }));
 
       const tasks = new Listr(tasksForListr, { concurrent: true });
@@ -101,7 +106,7 @@ export default (pathToDirectoryToWrite, locator) => {
       return tasks.run();
     })
     .then(() => {
-      const writingPath = path.join(pathToDirectoryToWrite, pagename);
+      const writingPath = path.join(outputDirname, pagename);
       return fs.writeFile(writingPath, changedPageInformation.html);
     });
 };
