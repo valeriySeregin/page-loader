@@ -9,25 +9,25 @@ import _ from 'lodash';
 
 const debug = buildDebug('page-loader');
 
-const getName = (url, type = 'file') => {
-  const linkWithoutProtocol = `${url.hostname}${url.pathname}`
+const getName = (pageUrl, nameType = 'file') => {
+  const linkWithoutProtocol = `${pageUrl.hostname}${pageUrl.pathname}`
     .replace(/\//g, '-')
     .replace(/\./, '-');
 
   const nameMapping = {
-    file: `${_.trimStart(url.pathname, '/').replace(/\//g, '-')}`,
+    file: `${_.trimStart(pageUrl.pathname, '/').replace(/\//g, '-')}`,
     page: `${linkWithoutProtocol}.html`,
     directory: `${linkWithoutProtocol}_files`,
   };
 
-  debug(`${nameMapping[type]} name has been created for ${type} of ${url.href}`);
+  debug(`${nameMapping[nameType]} name has been created for ${nameType} of ${pageUrl.href}`);
 
-  return nameMapping[type];
+  return nameMapping[nameType];
 };
 
-const downloadResource = (url, link, dirpath, dirname) => {
-  const downloadingLink = new URL(link, url);
-  const writingPath = path.join(dirpath, dirname, getName(downloadingLink));
+const downloadResource = (pageUrl, localLink, outputDirname, filesDirectoryName) => {
+  const downloadingLink = new URL(localLink, pageUrl);
+  const writingPath = path.join(outputDirname, filesDirectoryName, getName(downloadingLink));
 
   debug(`Download resource from ${downloadingLink.toString()}`);
 
@@ -39,7 +39,7 @@ const downloadResource = (url, link, dirpath, dirname) => {
     .then((resource) => fs.writeFile(writingPath, resource.data));
 };
 
-const changeLinksOnPage = (html, dirname, urlOrigin, pageUrl) => {
+const changeLinksOnPage = (html, filesDirectoryName, urlOrigin, pageUrl) => {
   const $ = cheerio.load(html, { xmlMode: true, decodeEntities: false });
 
   const mapping = {
@@ -48,57 +48,63 @@ const changeLinksOnPage = (html, dirname, urlOrigin, pageUrl) => {
     script: 'src',
   };
 
-  const links = $('link, script, img')
+  const localLinks = $('link, script, img')
     .toArray()
     .map((element) => $(element).attr('href') || $(element).attr('src'))
     .filter((element) => element)
     .filter((link) => {
-      const URLToCheckOrigin = new URL(link, pageUrl);
+      const urlToCheckOrigin = new URL(link, pageUrl);
 
-      return URLToCheckOrigin.origin === urlOrigin;
+      return urlToCheckOrigin.origin === urlOrigin;
     });
 
-  debug('Extracted local links:', links);
+  debug('Extracted local links:', localLinks);
 
   $('link, script, img')
     .each((i, tag) => {
       const oldAttr = $(tag).attr('href') || $(tag).attr('src');
-      const newAttr = new URL(oldAttr, pageUrl);
+      const urlBasedOnOldAttr = new URL(oldAttr, pageUrl);
       const attrToChange = mapping[tag.name];
-      const value = newAttr.origin === urlOrigin ? path.join(dirname, getName(newAttr)) : oldAttr;
+      const newAttr = path.join(filesDirectoryName, getName(urlBasedOnOldAttr));
+      const value = urlBasedOnOldAttr.origin === urlOrigin ? newAttr : oldAttr;
       $(tag).attr(attrToChange, value);
     });
 
   return {
     html: $.html(),
-    links,
+    localLinks,
   };
 };
 
-export default (outputDirname, pageUrl) => {
-  const url = new URL(pageUrl);
-  const pagename = getName(url, 'page');
-  const filesDirectoryName = getName(url, 'directory');
+export default (outputDirname, url) => {
+  const pageUrl = new URL(url);
+  const pagename = getName(pageUrl, 'page');
+  const filesDirectoryName = getName(pageUrl, 'directory');
 
   let changedPageInformation;
 
-  debug(`Request to ${url.href}`);
+  debug(`Request to ${pageUrl.href}`);
 
-  return axios(url.href)
+  return axios(pageUrl.href)
     .then((response) => {
       const html = response.data;
       changedPageInformation = changeLinksOnPage(
         html,
         filesDirectoryName,
-        url.origin,
-        url.toString(),
+        pageUrl.origin,
+        pageUrl.toString(),
       );
     })
     .then(() => fs.mkdir(path.join(outputDirname, filesDirectoryName)))
     .then(() => {
-      const tasksForListr = changedPageInformation.links.map((link) => ({
-        title: link,
-        task: () => downloadResource(url.href, link, outputDirname, filesDirectoryName),
+      const tasksForListr = changedPageInformation.localLinks.map((localLink) => ({
+        title: localLink,
+        task: () => downloadResource(
+          pageUrl.toString(),
+          localLink,
+          outputDirname,
+          filesDirectoryName,
+        ),
       }));
 
       const tasks = new Listr(tasksForListr, { concurrent: true });
