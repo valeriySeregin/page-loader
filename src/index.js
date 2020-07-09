@@ -81,19 +81,16 @@ export default (pathToDirectoryToWrite, locator) => {
   const pagename = getName(url, 'page');
   const filesDirectoryName = getName(url, 'directory');
 
-  let html;
   let changedPageInformation;
 
   debug(`Request to ${url.href}`);
 
   return axios(url.href)
     .then((response) => {
-      html = response.data;
-    })
-    .then(() => fs.mkdir(path.join(pathToDirectoryToWrite, filesDirectoryName)))
-    .then(() => {
+      const html = response.data;
       changedPageInformation = changeLinksOnPage(html, filesDirectoryName, url.href);
     })
+    .then(() => fs.mkdir(path.join(pathToDirectoryToWrite, filesDirectoryName)))
     .then(() => {
       const tasksForListr = changedPageInformation.links.map((link) => ({
         title: link,
