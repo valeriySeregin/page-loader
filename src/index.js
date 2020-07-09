@@ -86,11 +86,7 @@ export default (pathToDirectoryToWrite, locator) => {
 
   debug(`Request to ${url.href}`);
 
-  return axios({
-    method: 'get',
-    url: url.href,
-    responseType: 'arraybuffer',
-  })
+  return axios(url.href)
     .then((response) => {
       html = response.data;
     })
