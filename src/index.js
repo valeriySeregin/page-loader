@@ -71,7 +71,7 @@ const changeLinksOnPage = (html, dirname, locator) => {
     });
 
   return {
-    jQueryMimic: $,
+    html: $.html(),
     links,
   };
 };
@@ -106,6 +106,6 @@ export default (pathToDirectoryToWrite, locator) => {
     })
     .then(() => {
       const writingPath = path.join(pathToDirectoryToWrite, pagename);
-      return fs.writeFile(writingPath, changedPageInformation.jQueryMimic.html());
+      return fs.writeFile(writingPath, changedPageInformation.html);
     });
 };
