@@ -50,7 +50,11 @@ const changeLinksOnPage = (html, filesDirectoryName, urlOrigin, pageUrl) => {
 
   const localLinks = $('link, script, img')
     .toArray()
-    .map((element) => $(element).attr('href') || $(element).attr('src'))
+    .map((element) => {
+      const link = $(element).attr('href') || $(element).attr('src');
+
+      return link;
+    })
     .filter((element) => element)
     .filter((link) => {
       const urlToCheckOrigin = new URL(link, pageUrl);
