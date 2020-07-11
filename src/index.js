@@ -48,29 +48,22 @@ const changeLinksOnPage = (html, filesDirectoryName, urlOrigin, pageUrl) => {
     script: 'src',
   };
 
-  const localLinks = $('link, script, img')
-    .toArray()
-    .map((element) => {
-      console.log(Object.entries(element));
-      const link = $(element).attr('href') || $(element).attr('src');
-      const urlToCheckOrigin = new URL(link, pageUrl);
-      const localLink = urlToCheckOrigin.origin === urlOrigin ? link : '';
+  const localLinks = Object.entries(mapping)
+    .map((entry) => {
+      const [tagName, attrName] = entry;
+      const [tag] = $(tagName).toArray();
+      const oldLink = $(tag).attr(attrName);
+      const oldLinkUrl = new URL(oldLink, pageUrl);
+      const localLink = oldLinkUrl.origin === urlOrigin ? oldLink : null;
+      const newLink = path.join(filesDirectoryName, getName(oldLinkUrl));
+      const value = oldLinkUrl.origin === urlOrigin ? newLink : oldLink;
+      $(tag).attr(attrName, value);
 
       return localLink;
     })
-    .filter((str) => str);
+    .filter((link) => link);
 
   debug('Extracted local links:', localLinks);
-
-  $('link, script, img')
-    .each((i, tag) => {
-      const oldAttr = $(tag).attr('href') || $(tag).attr('src');
-      const urlBasedOnOldAttr = new URL(oldAttr, pageUrl);
-      const attrToChange = mapping[tag.name];
-      const newAttr = path.join(filesDirectoryName, getName(urlBasedOnOldAttr));
-      const value = urlBasedOnOldAttr.origin === urlOrigin ? newAttr : oldAttr;
-      $(tag).attr(attrToChange, value);
-    });
 
   return {
     html: $.html(),
