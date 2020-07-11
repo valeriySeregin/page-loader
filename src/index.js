@@ -51,16 +51,14 @@ const changeLinksOnPage = (html, filesDirectoryName, urlOrigin, pageUrl) => {
   const localLinks = $('link, script, img')
     .toArray()
     .map((element) => {
+      console.log(Object.entries(element));
       const link = $(element).attr('href') || $(element).attr('src');
-
-      return link;
-    })
-    .filter((element) => element)
-    .filter((link) => {
       const urlToCheckOrigin = new URL(link, pageUrl);
+      const localLink = urlToCheckOrigin.origin === urlOrigin ? link : '';
 
-      return urlToCheckOrigin.origin === urlOrigin;
-    });
+      return localLink;
+    })
+    .filter((str) => str);
 
   debug('Extracted local links:', localLinks);
 
