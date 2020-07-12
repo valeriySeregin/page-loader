@@ -25,15 +25,14 @@ const getName = (pageUrl, nameType = 'file') => {
   return nameMapping[nameType];
 };
 
-const downloadResource = (pageUrl, localLink, outputDirname, filesDirectoryName) => {
-  const downloadingLink = new URL(localLink, pageUrl);
-  const writingPath = path.join(outputDirname, filesDirectoryName, getName(downloadingLink));
+const downloadResource = (outputDirname, filesDirname, resourceObj) => {
+  const writingPath = path.join(outputDirname, filesDirname, resourceObj.resourceName);
 
-  debug(`Download resource from ${downloadingLink.toString()}`);
+  debug(`Download resource from ${resourceObj.downloadingLink}`);
 
   return axios({
     method: 'get',
-    url: downloadingLink.toString(),
+    url: resourceObj.downloadingLink,
     responseType: 'arraybuffer',
   })
     .then((resource) => fs.writeFile(writingPath, resource.data));
@@ -48,33 +47,37 @@ const changeLinksOnPage = (html, filesDirectoryName, urlOrigin, pageUrl) => {
     script: 'src',
   };
 
-  const localLinks = Object.entries(mapping)
+  const resourcesObjects = Object.entries(mapping)
     .map((entry) => {
       const [tagName, attrName] = entry;
       const [tag] = $(tagName).toArray();
       const oldLink = $(tag).attr(attrName);
-      const oldLinkUrl = new URL(oldLink, pageUrl);
-      const localLink = oldLinkUrl.origin === urlOrigin ? oldLink : null;
-      const newLink = path.join(filesDirectoryName, getName(oldLinkUrl));
-      const value = oldLinkUrl.origin === urlOrigin ? newLink : oldLink;
+      const downloadingLink = new URL(oldLink, pageUrl);
+      if (downloadingLink.origin !== urlOrigin) return null;
+      const resourceName = getName(downloadingLink);
+      const newLink = path.join(filesDirectoryName, getName(downloadingLink));
+      const value = downloadingLink.origin === urlOrigin ? newLink : oldLink;
       $(tag).attr(attrName, value);
 
-      return localLink;
+      return {
+        downloadingLink: downloadingLink.toString(),
+        resourceName,
+      };
     })
     .filter((link) => link);
 
-  debug('Extracted local links:', localLinks);
+  debug('Extracted local links:', resourcesObjects);
 
   return {
     html: $.html(),
-    localLinks,
+    resourcesObjects,
   };
 };
 
 export default (outputDirname, url) => {
   const pageUrl = new URL(url);
   const pagename = getName(pageUrl, 'page');
-  const filesDirectoryName = getName(pageUrl, 'directory');
+  const filesDirname = getName(pageUrl, 'directory');
 
   let changedPageInformation;
 
@@ -85,20 +88,19 @@ export default (outputDirname, url) => {
       const html = response.data;
       changedPageInformation = changeLinksOnPage(
         html,
-        filesDirectoryName,
+        filesDirname,
         pageUrl.origin,
         pageUrl.toString(),
       );
     })
-    .then(() => fs.mkdir(path.join(outputDirname, filesDirectoryName)))
+    .then(() => fs.mkdir(path.join(outputDirname, filesDirname)))
     .then(() => {
-      const tasksForListr = changedPageInformation.localLinks.map((localLink) => ({
-        title: localLink,
+      const tasksForListr = changedPageInformation.resourcesObjects.map((obj) => ({
+        title: obj.downloadingLink,
         task: () => downloadResource(
-          pageUrl.toString(),
-          localLink,
           outputDirname,
-          filesDirectoryName,
+          filesDirname,
+          obj,
         ),
       }));
 
