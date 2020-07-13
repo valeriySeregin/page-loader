@@ -104,9 +104,9 @@ export default (outputDirname, url) => {
         ),
       }));
 
-      const tasks = new Listr(tasksForListr, { concurrent: true });
+      const listrTasks = new Listr(tasksForListr, { concurrent: true });
 
-      return tasks.run();
+      return listrTasks.run();
     })
     .then(() => {
       const writingPath = path.join(outputDirname, pagename);
