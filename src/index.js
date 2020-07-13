@@ -25,17 +25,17 @@ const getName = (pageUrl, nameType = 'file') => {
   return nameMapping[nameType];
 };
 
-const downloadResource = (outputDirname, filesDirname, resourceObj) => {
-  const writingPath = path.join(outputDirname, filesDirname, resourceObj.resourceName);
+const downloadResource = (outputDirname, filesDirname, resource) => {
+  const writingPath = path.join(outputDirname, filesDirname, resource.resourceName);
 
-  debug(`Download resource from ${resourceObj.downloadingLink}`);
+  debug(`Download resource from ${resource.downloadingLink}`);
 
   return axios({
     method: 'get',
-    url: resourceObj.downloadingLink,
+    url: resource.downloadingLink,
     responseType: 'arraybuffer',
   })
-    .then((resource) => fs.writeFile(writingPath, resource.data));
+    .then((response) => fs.writeFile(writingPath, response.data));
 };
 
 const changeLinksOnPage = (html, filesDirectoryName, urlOrigin, pageUrl) => {
@@ -47,7 +47,7 @@ const changeLinksOnPage = (html, filesDirectoryName, urlOrigin, pageUrl) => {
     script: 'src',
   };
 
-  const resourcesObjects = Object.entries(mapping)
+  const resources = Object.entries(mapping)
     .map((entry) => {
       const [tagName, attrName] = entry;
       const [tag] = $(tagName).toArray();
@@ -66,11 +66,11 @@ const changeLinksOnPage = (html, filesDirectoryName, urlOrigin, pageUrl) => {
     })
     .filter((link) => link);
 
-  debug('Extracted local links:', resourcesObjects);
+  debug('Extracted local links:', resources);
 
   return {
     html: $.html(),
-    resourcesObjects,
+    resources,
   };
 };
 
@@ -95,12 +95,12 @@ export default (outputDirname, url) => {
     })
     .then(() => fs.mkdir(path.join(outputDirname, filesDirname)))
     .then(() => {
-      const tasksForListr = changedPageInformation.resourcesObjects.map((obj) => ({
-        title: obj.downloadingLink,
+      const tasksForListr = changedPageInformation.resources.map((resource) => ({
+        title: resource.downloadingLink,
         task: () => downloadResource(
           outputDirname,
           filesDirname,
-          obj,
+          resource,
         ),
       }));
 
