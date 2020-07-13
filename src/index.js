@@ -55,7 +55,7 @@ const changeLinksOnPage = (html, filesDirectoryName, urlOrigin, pageUrl) => {
       const downloadingLink = new URL(oldLink, pageUrl);
       if (downloadingLink.origin !== urlOrigin) return null;
       const resourceName = getName(downloadingLink);
-      const newLink = path.join(filesDirectoryName, getName(downloadingLink));
+      const newLink = path.join(filesDirectoryName, resourceName);
       const value = downloadingLink.origin === urlOrigin ? newLink : oldLink;
       $(tag).attr(attrName, value);
 
