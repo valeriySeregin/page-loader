@@ -44,11 +44,18 @@ test('download HTML page with local resources', async () => {
     .reply(200, firstResourceResponse)
     .log(console.log);
 
-  const secondResourceResponse = await fs.readFile(getFixturePath('image.png'), 'utf-8');
+  const secondResourceResponse = await fs.readFile(getFixturePath('image1.png'), 'utf-8');
 
   nock(testURL.origin)
-    .get('/assets/image.png')
+    .get('/assets/image1.png')
     .reply(200, secondResourceResponse)
+    .log(console.log);
+
+  const thirdResourceResponse = await fs.readFile(getFixturePath('image2.svg'), 'utf-8');
+
+  nock(testURL.origin)
+    .get('/assets/image2.svg')
+    .reply(200, thirdResourceResponse)
     .log(console.log);
 
   await getHTMLPage(tmpdirPath, testURL.toString());
@@ -61,12 +68,16 @@ test('download HTML page with local resources', async () => {
   const actual2 = await fs.readFile(path.join(tmpdirPath, assetsDirectory, 'style.css'), 'utf-8');
   const expected2 = firstResourceResponse;
 
-  const actual3 = await fs.readFile(path.join(tmpdirPath, assetsDirectory, 'assets-image.png'), 'utf-8');
+  const actual3 = await fs.readFile(path.join(tmpdirPath, assetsDirectory, 'assets-image1.png'), 'utf-8');
   const expected3 = secondResourceResponse;
+
+  const actual4 = await fs.readFile(path.join(tmpdirPath, assetsDirectory, 'assets-image2.svg'), 'utf-8');
+  const expected4 = thirdResourceResponse;
 
   expect(actual1).toEqual(expected1);
   expect(actual2).toEqual(expected2);
   expect(actual3).toEqual(expected3);
+  expect(actual4).toEqual(expected4);
 });
 
 test('downloading fails on HTTP error 404', async () => {
