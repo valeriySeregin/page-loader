@@ -50,14 +50,39 @@ const changeLinksOnPage = (html, filesDirectoryName, urlOrigin) => {
   const resources = Object.entries(mapping)
     .map((entry) => {
       const [tagName, attrName] = entry;
-      const [tag] = $(tagName).toArray();
+      const tags = $(tagName)
+        .toArray()
+        .map((tag) => [tag, attrName]);
+
+      return tags;
+    })
+    .reduce((acc, tagData) => [...acc, ...tagData], [])
+    .map((tagData) => {
+      const [tag, attrName] = tagData;
       const oldLink = $(tag).attr(attrName);
       const downloadingLink = new URL(oldLink, urlOrigin);
-      if (downloadingLink.origin !== urlOrigin) return null;
       const resourceName = getName(downloadingLink);
       const newLink = path.join(filesDirectoryName, resourceName);
-      const value = downloadingLink.origin === urlOrigin ? newLink : oldLink;
-      $(tag).attr(attrName, value);
+
+      return {
+        tag,
+        attrName,
+        newLink,
+        downloadingLink,
+        resourceName,
+      };
+    })
+    .map((resourceData) => {
+      const {
+        tag,
+        attrName,
+        newLink,
+        downloadingLink,
+        resourceName,
+      } = resourceData;
+
+      if (downloadingLink.origin !== urlOrigin) return null;
+      $(tag).attr(attrName, newLink);
 
       return {
         downloadingLink: downloadingLink.toString(),
