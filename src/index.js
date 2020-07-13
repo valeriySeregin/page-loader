@@ -38,7 +38,7 @@ const downloadResource = (outputDirname, filesDirname, resource) => {
     .then((response) => fs.writeFile(writingPath, response.data));
 };
 
-const changeLinksOnPage = (html, filesDirectoryName, urlOrigin, pageUrl) => {
+const changeLinksOnPage = (html, filesDirectoryName, urlOrigin) => {
   const $ = cheerio.load(html, { xmlMode: true, decodeEntities: false });
 
   const mapping = {
@@ -52,7 +52,7 @@ const changeLinksOnPage = (html, filesDirectoryName, urlOrigin, pageUrl) => {
       const [tagName, attrName] = entry;
       const [tag] = $(tagName).toArray();
       const oldLink = $(tag).attr(attrName);
-      const downloadingLink = new URL(oldLink, pageUrl);
+      const downloadingLink = new URL(oldLink, urlOrigin);
       if (downloadingLink.origin !== urlOrigin) return null;
       const resourceName = getName(downloadingLink);
       const newLink = path.join(filesDirectoryName, resourceName);
@@ -90,7 +90,6 @@ export default (outputDirname, url) => {
         html,
         filesDirname,
         pageUrl.origin,
-        pageUrl.toString(),
       );
     })
     .then(() => fs.mkdir(path.join(outputDirname, filesDirname)))
