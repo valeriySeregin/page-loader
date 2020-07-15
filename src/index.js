@@ -47,11 +47,9 @@ const changeLinksOnPage = (html, filesDirectoryName, urlOrigin) => {
     script: 'src',
   };
 
-  const mappingEntries = Object.entries(mapping);
-
   const resources = [];
 
-  mappingEntries.forEach((entry) => {
+  Object.entries(mapping).forEach((entry) => {
     const [tagName, attrName] = entry;
 
     $(tagName).toArray()
