@@ -47,49 +47,35 @@ const changeLinksOnPage = (html, filesDirectoryName, urlOrigin) => {
     script: 'src',
   };
 
-  const resources = Object.entries(mapping)
-    .map((entry) => {
-      const [tagName, attrName] = entry;
-      const tags = $(tagName)
-        .toArray()
-        .map((tag) => [tag, attrName]);
+  const mappingEntries = Object.entries(mapping);
 
-      return tags;
-    })
-    .reduce((acc, tagData) => [...acc, ...tagData], [])
-    .map((tagData) => {
-      const [tag, attrName] = tagData;
-      const oldLink = $(tag).attr(attrName);
-      const downloadingLink = new URL(oldLink, urlOrigin);
-      const resourceName = getName(downloadingLink);
-      const newLink = path.join(filesDirectoryName, resourceName);
+  const resources = [];
 
-      return {
-        tag,
-        attrName,
-        newLink,
-        downloadingLink,
-        resourceName,
-      };
-    })
-    .map((resourceData) => {
-      const {
-        tag,
-        attrName,
-        newLink,
-        downloadingLink,
-        resourceName,
-      } = resourceData;
+  mappingEntries.forEach((entry) => {
+    const [tagName, attrName] = entry;
 
-      if (downloadingLink.origin !== urlOrigin) return null;
-      $(tag).attr(attrName, newLink);
+    $(tagName).toArray()
+      .filter((tag) => {
+        const oldLink = $(tag).attr(attrName);
+        const downloadingLink = new URL(oldLink, urlOrigin);
 
-      return {
-        downloadingLink: downloadingLink.toString(),
-        resourceName,
-      };
-    })
-    .filter((link) => link);
+        return downloadingLink.origin === urlOrigin;
+      })
+      .forEach((tag) => {
+        const oldLink = $(tag).attr(attrName);
+        const downloadingLink = new URL(oldLink, urlOrigin);
+        const resourceName = getName(downloadingLink);
+        const newLink = path.join(filesDirectoryName, resourceName);
+        $(tag).attr(attrName, newLink);
+
+        const resource = {
+          resourceName,
+          downloadingLink: downloadingLink.toString(),
+        };
+
+        resources.push(resource);
+      });
+  });
 
   debug('Extracted local links:', resources);
 
