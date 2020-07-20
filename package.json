@@ -37,7 +37,7 @@
     "commander": "^5.1.0",
     "debug": "^4.1.1",
     "listr": "^0.14.3",
-    "lodash": "^4.17.15"
+    "lodash": "^4.17.19"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",
